@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+
+#
+# = Synopsis
+#
+# Generate some aspect of a Puppet infrastructure.
+#
+# = Usage
+#
+#   scaffold [-h|--help] [-V|--version] <target>
+#
+# = Description
+#
+# This script is used for building parts of a Puppet infrastructure
+# using prebuilt templates and scripts.
+#
+# = Options
+#
+# help::
+#   Print this help message
+#
+# = Example
+#
+#   scaffold class foo::bar
+#
+# = Author
+#
+# Luke Kanies
+#
+# = Copyright
+#
+# Copyright (c) 2008 Reductive Labs, LLC
+# Licensed under the GNU Public License
+
+# Stupid rdoc.
+begin
+    require 'rdoc/ri/ri_paths'
+    require 'rdoc/usage'
+rescue
+end
+
+options = [
+    [ "--help",		"-h",			GetoptLong::NO_ARGUMENT ]
+]
+
+result = GetoptLong.new(*options)
+
+begin
+    result.each { |opt,arg|
+        case opt
+            when "--help"
+                if defined?(RDoc)
+                    RDoc::usage && exit
+                else
+                    puts "No help available unless you have RDoc::usage installed"
+                    exit(2)
+                end
+        end
+    }
+rescue GetoptLong::InvalidOption => detail
+    $stderr.puts "Unknown option: %s; try '#{$0} --help'" % detail
+    exit(1)
+end
