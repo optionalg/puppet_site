@@ -5,5 +5,5 @@ Autotest.add_discovery do
 end
 
 Autotest.add_discovery do
-  "scaffolding"
+  "scaffold"
 end

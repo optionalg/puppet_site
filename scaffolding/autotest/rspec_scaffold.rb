@@ -27,7 +27,7 @@ Autotest.add_hook :initialize do |at|
 	}
 end
 
-class Autotest::ScaffoldRspec < Autotest::Rspec
+class Autotest::RspecScaffold < Autotest::Rspec
   # Autotest will look for spec commands in the following
   # locations, in this order:
   #
