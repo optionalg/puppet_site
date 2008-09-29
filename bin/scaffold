@@ -32,6 +32,10 @@
 # Copyright (c) 2008 Reductive Labs, LLC
 # Licensed under the GNU Public License
 
+# Add our scaffolding code.
+path = File.expand_path(File.join(File.dirname(__FILE__), "..", "scaffolding", "lib"))
+$LOAD_PATH << path
+
 # Stupid rdoc.
 begin
     require 'rdoc/ri/ri_paths'
@@ -40,7 +44,7 @@ rescue
 end
 
 options = [
-    [ "--help",		"-h",			GetoptLong::NO_ARGUMENT ]
+    [ "--help",         "-h",            GetoptLong::NO_ARGUMENT ]
 ]
 
 result = GetoptLong.new(*options)
@@ -61,3 +65,9 @@ rescue GetoptLong::InvalidOption => detail
     $stderr.puts "Unknown option: %s; try '#{$0} --help'" % detail
     exit(1)
 end
+
+require 'scaffold'
+
+plugin = Scaffold::Plugin.new(*ARGV)
+
+plugin.generate
