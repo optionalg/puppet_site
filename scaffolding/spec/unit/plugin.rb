@@ -3,20 +3,32 @@ Dir.chdir(File.dirname(__FILE__)) { (s = lambda { |f| File.exist?(f) ? require(f
 require 'scaffold'
 
 describe Scaffold::Plugin do
-    it "should require a name at initialization" do
+    before do
+        @plugin = Scaffold::Plugin.new("foo", "bar")
+    end
+
+    it "should require a generator name at initialization" do
         lambda { Scaffold::Plugin.new }.should raise_error(ArgumentError)
     end
 
-    it "should make the name available" do
-        Scaffold::Plugin.new("foo").name.should == "foo"
+    it "should require a name at initialization" do
+        lambda { Scaffold::Plugin.new("foo") }.should raise_error(ArgumentError)
     end
 
-    it "should make all other options available" do
-        Scaffold::Plugin.new("foo", :one, :two).options.should == [:one, :two]
+    it "should make the generator name available" do
+        @plugin.generator.should == "foo"
+    end
+
+    it "should make the name available" do
+        @plugin.name.should == "bar"
+    end
+
+    it "should parse all other arguments as name/value pairs" do
+        Scaffold::Plugin.new("foo", "bar", "one=two", "three=four").options.should == {:one => "two", :three => "four"}
     end
 
     it "should be able to provide its source" do
-        Scaffold::Plugin.new("foo").should respond_to(:source)
+        @plugin.should respond_to(:source)
     end
 
     it "should calculate its source as the first directory named after itself in the search path" do
@@ -24,7 +36,7 @@ describe Scaffold::Plugin do
         FileTest.expects(:exist?).with("/one/foo").returns false
         FileTest.expects(:exist?).with("/two/foo").returns true
 
-        Scaffold::Plugin.new("foo").source.should == "/two/foo"
+        @plugin.source.should == "/two/foo"
     end
 
     it "should fail if its source cannot be found" do
@@ -32,27 +44,27 @@ describe Scaffold::Plugin do
         FileTest.expects(:exist?).with("/one/foo").returns false
         FileTest.expects(:exist?).with("/two/foo").returns false
 
-        lambda { Scaffold::Plugin.new("foo").source }.should raise_error(RuntimeError)
+        lambda { @plugin.source }.should raise_error(RuntimeError)
     end
 
     it "should pick its code as 'plugin.rb' in its source directory" do
-        plugin = Scaffold::Plugin.new("foo")
+        plugin = @plugin
         plugin.expects(:source).returns "/my/source"
         plugin.code.should == "/my/source/plugin.rb"
     end
 
     it "should be able to get its path" do
-        Scaffold::Plugin.new("foo").should respond_to(:path)
+        @plugin.should respond_to(:path)
     end
 
     it "should set its path if a path is provided and return the path if no argument is provided" do
-        plugin = Scaffold::Plugin.new("foo")
+        plugin = @plugin
         plugin.path("yay")
         plugin.path.should == "yay"
     end
 
     it "should be able to create a manifest" do
-        Scaffold::Plugin.new("foo").should respond_to(:manifest)
+        @plugin.should respond_to(:manifest)
     end
 
     it "should create a manifest and instance_eval the provided block when creating its manifest" do
@@ -60,7 +72,7 @@ describe Scaffold::Plugin do
         Scaffold::Manifest.expects(:new).returns manifest
         manifest.expects(:testing)
 
-        plugin = Scaffold::Plugin.new("foo")
+        plugin = @plugin
         plugin.manifest { testing() }
 
         plugin.mymanifest.should equal(manifest)
@@ -68,11 +80,11 @@ describe Scaffold::Plugin do
     end
 
     it "should be able to load its code" do
-        Scaffold::Plugin.new("foo").should respond_to(:load)
+        @plugin.should respond_to(:load)
     end
 
     it "should fail when loading if no code exists" do
-        scaffold = Scaffold::Plugin.new("foo")
+        scaffold = @plugin
         scaffold.expects(:source).returns "/my/plugin"
 
         FileTest.expects(:exist?).with("/my/plugin/plugin.rb").returns false
@@ -81,7 +93,7 @@ describe Scaffold::Plugin do
     end
 
     it "should load code by reading in and evaluating the specified file" do
-        plugin = Scaffold::Plugin.new("foo")
+        plugin = @plugin
         plugin.stubs(:code).returns "/my/code.rb"
         FileTest.expects(:exist?).with("/my/code.rb").returns true
         File.expects(:read).with("/my/code.rb").returns "my code"
@@ -94,24 +106,24 @@ describe Scaffold::Plugin do
     end
 
     it "should fail if it has no manifest after loading" do
-        plugin = Scaffold::Plugin.new("foo")
+        plugin = @plugin
 
         lambda { plugin.load }.should raise_error(RuntimeError)
     end
 
     it "should fail if it has no path after loading" do
-        plugin = Scaffold::Plugin.new("foo")
+        plugin = @plugin
         plugin.stubs(:mymanifest).returns mock('manifest')
 
         lambda { plugin.load }.should raise_error(RuntimeError)
     end
 
     it "should know how to calculate its destination" do
-        Scaffold::Plugin.new("foo").should respond_to(:destination)
+        @plugin.should respond_to(:destination)
     end
 
     it "should calculate its destination by joining the base directory and the plugin instance path" do
-        plugin = Scaffold::Plugin.new("foo")
+        plugin = @plugin
         plugin.expects(:path).returns "yayness"
         Scaffold.expects(:basedir).returns "/mydir"
 
@@ -119,13 +131,11 @@ describe Scaffold::Plugin do
     end
 
     it "should be able to generate the scaffolding" do
-        Scaffold::Plugin.new("foo").should respond_to(:generate)
+        @plugin.should respond_to(:generate)
     end
 
     describe "when generating" do
         before do
-            @plugin = Scaffold::Plugin.new("foo")
-
             @manifest = stub 'manifest', :create => nil
             @plugin.stubs(:mymanifest).returns @manifest
             @plugin.stubs(:load)
@@ -154,5 +164,20 @@ describe Scaffold::Plugin do
 
             @plugin.generate
         end
+    end
+
+    it "should be able to evaluate a template" do
+        @plugin.should respond_to(:evaluate_template)
+    end
+
+    it "should pass its binding to ERB to evaluate the template" do
+        template = mock 'template'
+
+        ERB.expects(:new).with("my code").returns template
+
+        @plugin.expects(:binding).returns "my binding"
+        template.expects(:result).with("my binding").returns "my result"
+
+        @plugin.evaluate_template("my code")
     end
 end

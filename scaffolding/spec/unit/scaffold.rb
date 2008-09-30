@@ -4,7 +4,7 @@ require 'scaffold'
 
 describe Scaffold do
     it "should have a class attribute that provides the basedir as the parent directory of the parent directory of the library" do
-        base = File.expand_path("#{__FILE__}/../../..")
+        base = File.expand_path("#{__FILE__}/../../../..")
 
         Scaffold.basedir.should == base
     end

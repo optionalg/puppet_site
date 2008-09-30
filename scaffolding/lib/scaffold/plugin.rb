@@ -1,8 +1,10 @@
 require 'scaffold'
 require 'scaffold/manifest'
 
+require 'erb'
+
 class Scaffold::Plugin
-    attr_reader :name, :options, :mymanifest
+    attr_reader :generator, :name, :options, :mymanifest
 
     # Find the path to the code that defines the behaviour of the plugin.
     def code
@@ -12,6 +14,11 @@ class Scaffold::Plugin
     # Where should we install the plugin files?
     def destination
         File.join(Scaffold.basedir, path)
+    end
+
+    # Evaluate the code for a template using our binding.
+    def evaluate_template(code)
+        ERB.new(code).result(binding)
     end
 
     # Generate our scaffolding.
@@ -27,11 +34,16 @@ class Scaffold::Plugin
         mymanifest.create(self)
     end
 
-    def initialize(name, *options)
+    def initialize(generator, name, *options)
         @source = @mymanifest = nil
+        @generator = generator
         @name = name
 
-        @options = options
+        @options = options.inject({}) do |hash, opt| 
+            raise ArgumentError, "Options must be specified as 'name=value'" unless opt =~ /^(\w+)=(.*)$/
+            hash[$1.to_sym] = $2
+            hash
+        end
     end
 
     # Load the code that defines how this plugin works.
@@ -62,8 +74,8 @@ class Scaffold::Plugin
     # Find out where our generator code and such is coming from.
     def source
         unless @source
-            unless @source = Scaffold.path.collect { |dir| File.join(dir, name) }.find { |d| FileTest.exist?(d) }
-                raise "Could not find source for %s" % name
+            unless @source = Scaffold.path.collect { |dir| File.join(dir, generator) }.find { |d| FileTest.exist?(d) }
+                raise "Could not find source for %s" % generator
             end
         end
         @source

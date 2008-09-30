@@ -3,7 +3,7 @@ class Scaffold
     require 'scaffold/manifest'
     require 'scaffold/plugin'
 
-    BASEDIR = File.expand_path("#{__FILE__}/../..")
+    BASEDIR = File.expand_path(File.join(File.dirname(__FILE__), "../.."))
 
     def self.basedir
         BASEDIR
